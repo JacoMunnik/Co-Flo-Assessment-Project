@@ -1,0 +1,6 @@
+@Co_Flo_Assessment_Project_HostAddress = http://localhost:5251
+
+GET {{Co_Flo_Assessment_Project_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
