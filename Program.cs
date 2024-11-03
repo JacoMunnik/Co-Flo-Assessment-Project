@@ -1,18 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.Annotations;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddDbContext<PeopleContext>(opt => opt.UseInMemoryDatabase("PeopleList"));
+builder.Services.AddDbContext<PeopleContext>(optionsAction: opt => opt.UseInMemoryDatabase("PeopleList"));
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "People API", Version = "v1" });
     c.EnableAnnotations(); // Enable annotations
 });
-builder.Services.AddCors(options =>
+builder.Services.AddCors(setupAction: options =>
 {
     options.AddDefaultPolicy(builder =>
     {
@@ -21,6 +20,16 @@ builder.Services.AddCors(options =>
                .AllowAnyMethod();
     });
 });
+
+// Configure Kestrel to use the settings from appsettings.json
+builder.WebHost.UseKestrel((context, options) =>
+{
+    options.Configure(context.Configuration.GetSection("Kestrel"));
+});
+
+// Add IIS integration
+builder.WebHost.UseIISIntegration();
+builder.WebHost.UseIIS();
 
 var app = builder.Build();
 
