@@ -14,92 +14,90 @@ public class PeopleController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Retrieves all people.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetPeople()
     {
         try
         {
             var people = await _context.People.ToListAsync();
-            return Ok(people);
+            return Ok(value: people);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while fetching people.");
-            return StatusCode(500, "Internal server error");
+            _logger.LogError(exception: ex, message: "Error occurred while fetching people.");
+            return StatusCode(statusCode: 500, value: "Internal server error");
         }
     }
 
+    /// <summary>
+    /// Retrieves a person by ID.
+    /// </summary>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetPerson(int id)
     {
         try
         {
-            var person = await _context.People.FindAsync(id);
+            var person = await _context.People.FindAsync(keyValues: id);
             if (person == null)
             {
-                _logger.LogWarning("Person with ID {PersonId} not found.", id);
+                _logger.LogWarning(message: "Person with ID {PersonId} not found.", args: id);
                 return NotFound();
             }
-            return Ok(person);
+            return Ok(value: person);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while fetching person with ID {PersonId}.", id);
-            return StatusCode(500, "Internal server error");
+            _logger.LogError(exception: ex, message: "Error occurred while fetching person with ID {PersonId}.", args: id);
+            return StatusCode(statusCode: 500, value: "Internal server error");
         }
     }
 
+    /// <summary>
+    /// Creates a new person.
+    /// </summary>
     [HttpPost]
     public async Task<IActionResult> CreatePerson([FromBody] Person person)
     {
+        if (!IsValidPerson(person: person))
+        {
+            return BadRequest(modelState: ModelState);
+        }
+
         try
         {
-            if (person == null)
-            {
-                _logger.LogWarning("Received null person object.");
-                return BadRequest("Person object is null");
-            }
-
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Invalid person object received.");
-                return BadRequest("Invalid model object");
-            }
-
             person.DateCreated = DateTime.UtcNow;
-            _context.People.Add(person);
+            _context.People.Add(entity: person);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetPerson), new { id = person.Id }, person);
+            return CreatedAtAction(actionName: nameof(GetPerson), routeValues: new { id = person.Id }, value: person);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while creating a new person.");
-            return StatusCode(500, "Internal server error");
+            _logger.LogError(exception: ex, message: "Error occurred while creating a new person.");
+            return StatusCode(statusCode: 500, value: "Internal server error");
         }
     }
 
+    /// <summary>
+    /// Updates an existing person.
+    /// </summary>
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdatePerson(int id, [FromBody] Person person)
     {
+        if (!IsValidPerson(person: person) || person.Id != id)
+        {
+            return BadRequest(modelState: ModelState);
+        }
+
         try
         {
-            if (person == null || person.Id != id)
-            {
-                _logger.LogWarning("Invalid person object or ID mismatch.");
-                return BadRequest("Invalid person object or ID mismatch");
-            }
-
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Invalid person object received.");
-                return BadRequest("Invalid model object");
-            }
-
-            var existingPerson = await _context.People.FindAsync(id);
+            var existingPerson = await _context.People.FindAsync(keyValues: id);
             if (existingPerson == null)
             {
-                _logger.LogWarning("Person with ID {PersonId} not found.", id);
+                _logger.LogWarning(message: "Person with ID {PersonId} not found.", args: id);
                 return NotFound();
             }
 
@@ -113,32 +111,56 @@ public class PeopleController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while updating person with ID {PersonId}.", id);
-            return StatusCode(500, "Internal server error");
+            _logger.LogError(exception: ex, message: "Error occurred while updating person with ID {PersonId}.", args: id);
+            return StatusCode(statusCode: 500, value: "Internal server error");
         }
     }
 
+    /// <summary>
+    /// Deletes a person by ID.
+    /// </summary>
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletePerson(int id)
     {
         try
         {
-            var person = await _context.People.FindAsync(id);
+            var person = await _context.People.FindAsync(keyValues: id);
             if (person == null)
             {
-                _logger.LogWarning("Person with ID {PersonId} not found.", id);
+                _logger.LogWarning(message: "Person with ID {PersonId} not found.", args: id);
                 return NotFound();
             }
 
-            _context.People.Remove(person);
+            _context.People.Remove(entity: person);
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while deleting person with ID {PersonId}.", id);
-            return StatusCode(500, "Internal server error");
+            _logger.LogError(exception: ex, message: "Error occurred while deleting person with ID {PersonId}.", args: id);
+            return StatusCode(statusCode: 500, value: "Internal server error");
         }
+    }
+
+    /// <summary>
+    /// Validates the person object.
+    /// </summary>
+    private bool IsValidPerson(Person person)
+    {
+        if (person == null)
+        {
+            _logger.LogWarning(message: "Received null person object.");
+            ModelState.AddModelError(key: "Person", errorMessage: "Person object is null");
+            return false;
+        }
+
+        if (!ModelState.IsValid)
+        {
+            _logger.LogWarning(message: "Invalid person object received.");
+            return false;
+        }
+
+        return true;
     }
 }
